@@ -12,7 +12,7 @@ namespace LenientBenchmark
         
         static async Task Main(string[] args)
         {
-            await RunAccumulation();
+            //await RunAccumulation();
             await RunSummation();
         }
 
@@ -58,44 +58,36 @@ namespace LenientBenchmark
             Console.WriteLine($"Lenient:\t\t{avgL} ticks");
         }
 
-        static async Task RunSummation()
+        static async Task<long> RunSummation()
         {
-            var seq = new List<long>();
-            var fd = new List<long>();
-            var l = new List<long>();
-            
             var t = new Timer();
             var r = new Random();
             var workBias = TimeSpan.FromSeconds(0.5);
             
-            for (var i = 0; i < NumberOfRuns; i++)
+            var tree = TreeGenerator.CreateTree(TreeSize, () => r.Next(int.MinValue, int.MaxValue));
+            long tSeq, tL;
+
+            var dummy = 0L;
+
+            do
             {
-                var tree = TreeGenerator.CreateTree(TreeSize, () => r.Next(int.MinValue, int.MaxValue));
-            
                 t.Play();
                 var sum = TreeSummer.SumLeaves(tree, workBias);
-                var tSeq = t.Check();
-                seq.Add(tSeq);
-            
-                t.Play();
-                sum = await TreeSummer.SumLeavesForkJoin(tree, workBias);
-                var tFJ = t.Check();
-                fd.Add(tFJ);
-            
+                tSeq = t.Check();
+                dummy += sum;
+
                 t.Play();
                 sum = await TreeSummer.SumLeavesLenient(Task.FromResult(tree), workBias);
-                var tL = t.Check();
-                l.Add(tL);
-            }
+                tL = t.Check();
+                dummy -= sum;
 
-            var avgSeq = seq.Average();
-            var avgFJ = fd.Average();
-            var avgL = l.Average();
+                workBias = workBias / 2;
+                Console.WriteLine($"Sequential: {tSeq} ticks\t\tLenient: {tL} ticks\t\tNew work bias: {workBias.Ticks} ticks ({workBias.Milliseconds} ms)");
+            } while (tSeq > tL);
 
-            Console.WriteLine($"Results for Summation of Tree of size {TreeSize} with {NumberOfRuns} runs");
-            Console.WriteLine($"Sequential:\t\t{avgSeq} ticks");
-            Console.WriteLine($"Fork Join:\t\t{avgFJ} ticks");
-            Console.WriteLine($"Lenient:\t\t{avgL} ticks");
+            Console.WriteLine($"Results for Summation of Tree of size {TreeSize} with work load bias");
+            Console.WriteLine($"Sequential was faster with:\t\t{workBias.Ticks} ticks ({workBias.Milliseconds} ms) workload bias");
+            return dummy;
         }
     }
 }
