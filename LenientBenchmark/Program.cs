@@ -66,24 +66,23 @@ namespace LenientBenchmark
             
             var t = new Timer();
             var r = new Random();
-            var workBias = TimeSpan.FromSeconds(0.5);
             
             for (var i = 0; i < NumberOfRuns; i++)
             {
                 var tree = TreeGenerator.CreateTree(TreeSize, () => r.Next(int.MinValue, int.MaxValue));
             
                 t.Play();
-                var sum = TreeSummer.SumLeaves(tree, workBias);
+                var sum = TreeSummer.SumLeaves(tree);
                 var tSeq = t.Check();
                 seq.Add(tSeq);
             
                 t.Play();
-                sum = await TreeSummer.SumLeavesForkJoin(tree, workBias);
+                sum = await TreeSummer.SumLeavesForkJoin(tree);
                 var tFJ = t.Check();
                 fd.Add(tFJ);
             
                 t.Play();
-                sum = await TreeSummer.SumLeavesLenient(Task.FromResult(tree), workBias);
+                sum = await TreeSummer.SumLeavesLenient(Task.FromResult(tree));
                 var tL = t.Check();
                 l.Add(tL);
             }
