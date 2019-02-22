@@ -23,9 +23,9 @@ namespace LenientBenchmark
         static async Task<long> RunSummation()
         {
 #if !DELAY_DEPENDS_ON_LR
-            var fileName = "work_bias_wait_before_join.csv";
+            var fileName = "work-bias-wait-before-join.csv";
 #else
-            var fileName = "work_bias_wait_after_join.csv";
+            var fileName = "work-bias-wait-after-join.csv";
 #endif
             if(File.Exists(fileName))
                 File.Delete(fileName);
@@ -76,9 +76,9 @@ namespace LenientBenchmark
         static async Task<long> RunNarySummation()
         {
 #if !DELAY_DEPENDS_ON_LR
-            var fileName = "nary_work_bias_wait_before_join.csv";
+            var fileName = "nary-work-bias-wait-before-join.csv";
 #else
-            var fileName = "nary_work_bias_wait_after_join.csv";
+            var fileName = "nary-work-bias-wait-after-join.csv";
 #endif
             if(File.Exists(fileName))
                 File.Delete(fileName);
