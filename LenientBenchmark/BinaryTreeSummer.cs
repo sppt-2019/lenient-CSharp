@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-#define DELAY_DEPENDS_ON_LR
-
 namespace LenientBenchmark
 {
-    public static class TreeSummer
+    public static class BinaryTreeSummer
     {
         public static int SumLeaves(Tree<int> tree, TimeSpan workBias)
         {
@@ -15,7 +13,7 @@ namespace LenientBenchmark
                 return leaf.Value;
             }
             
-            var node = tree as Node<int>;
+            var node = tree as BinaryNode<int>;
             var l = SumLeaves(node.Left, workBias);
             var r = SumLeaves(node.Right, workBias);
             
@@ -32,7 +30,7 @@ namespace LenientBenchmark
                 return leaf.Value;
             }
             
-            var node = tree as Node<int>;
+            var node = tree as BinaryNode<int>;
             
             var left = SumLeavesForkJoin(node.Left, workBias);
             var right = SumLeavesForkJoin(node.Right, workBias);
@@ -57,7 +55,7 @@ namespace LenientBenchmark
                 return leaf.Value;
             }
             
-            var n = t as Node<int>;
+            var n = t as BinaryNode<int>;
 
             var left = SumLeavesLenient(Task.FromResult(n.Left), workBias);
             var right = SumLeavesLenient(Task.FromResult(n.Right), workBias);

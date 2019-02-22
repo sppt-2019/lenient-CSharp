@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.VisualBasic.CompilerServices;
 
 namespace LenientBenchmark
@@ -17,15 +18,25 @@ namespace LenientBenchmark
         }
     }
 
-    public class Node<T> : Tree<T>
+    public class BinaryNode<T> : Tree<T>
     {
         public Tree<T> Left { get; set; }
         public Tree<T> Right { get; set; }
 
-        public Node(Tree<T> left, Tree<T> right)
+        public BinaryNode(Tree<T> left, Tree<T> right)
         {
             Left = left;
             Right = right;
+        }
+    }
+
+    public class NaryNode<T> : Tree<T>
+    {
+        public IEnumerable<Tree<T>> Children { get; set; }
+
+        public NaryNode(params Tree<T>[] children)
+        {
+            Children = children;
         }
     }
 }
