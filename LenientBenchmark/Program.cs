@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -8,18 +9,75 @@ using System.Xml.Serialization;
 
 namespace LenientBenchmark
 {
-    class Program
+    internal class Program
     {
         private const int NumberOfRuns = 100;
         private const int MaxTreeSize = 100000;
-        
-        static async Task Main(string[] args)
+
+        private static async Task Main(string[] args)
         {
-            await RunAccumulation();
-            await RunSummation();
+            Console.WriteLine(Stopwatch.Frequency);
+            
+            //await RunAccumulation();
+            //await RunSummation();
+            RunLinpack();
         }
 
-        static async Task RunAccumulation()
+        private static long Time<U, T>(Func<T, U> code, T arg)
+        {
+            U result;
+            var t = new Stopwatch();
+            t.Start();
+            result = code(arg);
+            t.Stop();
+            return t.ElapsedTicks;
+        }
+
+        private static void RunLinpack()
+        {
+            const string fileName = "linpack.csv";
+            if(File.Exists(fileName))
+                File.Delete(fileName);
+            var f = new StreamWriter(fileName);
+            f.WriteLine("Problem Size,Sequential,Sequential Error,Map Reduce,Map Reduce Error,Parallel Foreach,Parallel Foreach Error, Tasks, Tasks Error");
+            
+            var seq = new List<long>();
+            var mr = new List<long>();
+            var pfe = new List<long>();
+            var tasks = new List<long>();
+
+            for (var ps = 2; ps <= 4096; ps *= 2)
+            {
+                Write(1, "Problem size: " + ps);
+                for (var i = 0; i <= NumberOfRuns; i++)
+                {
+                    var m = Linpack.Setup(ps, ps);
+            
+                    seq.Add(Time(Linpack.SumSeq, m));
+                    mr.Add(Time(Linpack.SumMapReduce, m));
+                    pfe.Add(Time(Linpack.SumParallel, m));
+                    tasks.Add(Time(Linpack.SumTask, m));
+                
+                    //Line 0 is reserved for dll information
+                    Write(2, $"{((float) i / NumberOfRuns) * 100}%");
+                }
+
+                double avgSeq = seq.Skip(1).Average(), avgMR = mr.Skip(1).Average(), avgPFE = pfe.Skip(1).Average(), avgT = tasks.Skip(1).Average();
+                double sdSeq = GetStandardDeviation(seq.Skip(1), avgSeq),
+                    sdMR = GetStandardDeviation(mr.Skip(1), avgMR),
+                    sdPFE = GetStandardDeviation(pfe.Skip(1), avgPFE),
+                    sdT = GetStandardDeviation(tasks.Skip(1), avgT);
+                
+                f.WriteLine($"{ps},{avgSeq},{sdSeq},{avgMR},{sdMR},{avgPFE},{sdPFE},{avgT},{sdT}");
+            
+                Console.Clear();
+            }
+            
+            f.Flush();
+            f.Close();
+        }
+
+        private static async Task RunAccumulation()
         {
             const string fileName = "accumulation.csv";
             if(File.Exists(fileName))
@@ -36,6 +94,7 @@ namespace LenientBenchmark
 
             for (var ps = 10; ps <= MaxTreeSize; ps *= 10)
             {
+                //Line 0 is reserved for dll information
                 Write(1, "Problem size: " + ps);
                 for (var i = 0; i <= NumberOfRuns; i++)
                 {
@@ -59,14 +118,13 @@ namespace LenientBenchmark
                     var tL = t.Check();
                     l.Add(tL);
                 
-                    //Line 0 is reserved for dll information
                     Write(2, $"{((float) i / NumberOfRuns) * 100}%");
                 }
 
-                double avgSeq = seq.Average(), avgFJ = fd.Average(), avgL = l.Average();
-                double sdSeq = GetStandardDeviation(seq.Sum(c => c * c), avgSeq),
-                    sdFJ = GetStandardDeviation(fd.Sum(c => c * c), avgFJ),
-                    sdL = GetStandardDeviation(l.Sum(c => c * c), avgL);
+                double avgSeq = seq.Skip(1).Average(), avgFJ = fd.Skip(1).Average(), avgL = l.Skip(1).Average();
+                double sdSeq = GetStandardDeviation(seq.Skip(1), avgSeq),
+                    sdFJ = GetStandardDeviation(fd.Skip(1), avgFJ),
+                    sdL = GetStandardDeviation(l.Skip(1), avgL);
                 
                 f.WriteLine($"{ps},{avgSeq},{sdSeq},{avgFJ},{sdFJ},{avgL},{sdL}");
             
@@ -77,12 +135,14 @@ namespace LenientBenchmark
             f.Close();
         }
 
-        static double GetStandardDeviation(long deltaTimeSquared, double mean)
+        private static double GetStandardDeviation(IEnumerable<long> runningTimesEnum, double mean)
         {
-            return Math.Sqrt((deltaTimeSquared - mean * mean * NumberOfRuns) / (NumberOfRuns - 1));
+            var runningTimes = runningTimesEnum.ToList();
+            var squaredDeviation = runningTimes.Sum(n => Math.Pow(n - mean, 2));
+            return Math.Sqrt(squaredDeviation / runningTimes.Count - 1);
         }
 
-        static void Write(int lineNo, string msg)
+        private static void Write(int lineNo, string msg)
         {
             Console.SetCursorPosition(0,lineNo);
             Console.WriteLine();
@@ -90,7 +150,7 @@ namespace LenientBenchmark
             Console.WriteLine(msg);
         }
 
-        static async Task RunSummation()
+        private static async Task RunSummation()
         {
             const string fileName = "summation.csv";
             if(File.Exists(fileName))
@@ -132,9 +192,9 @@ namespace LenientBenchmark
                 }
                 
                 double avgSeq = seq.Average(), avgFJ = fd.Average(), avgL = l.Average();
-                double sdSeq = GetStandardDeviation(seq.Sum(c => c * c), avgSeq),
-                    sdFJ = GetStandardDeviation(fd.Sum(c => c * c), avgFJ),
-                    sdL = GetStandardDeviation(l.Sum(c => c * c), avgL);
+                double sdSeq = GetStandardDeviation(seq, avgSeq),
+                    sdFJ = GetStandardDeviation(fd, avgFJ),
+                    sdL = GetStandardDeviation(l, avgL);
                 
                 f.WriteLine($"{ps},{avgSeq},{sdSeq},{avgFJ},{sdFJ},{avgL},{sdL}");
             
