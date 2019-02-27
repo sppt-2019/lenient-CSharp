@@ -5,7 +5,14 @@ namespace LenientBenchmark
 {
     public static class TreeAccumulator
     {
-        public static void AccumulateLeaves<T>(Tree<T> tree, List<T> leaves)
+        public static List<T> AccumulateLeaves<T>(Tree<T> tree)
+        {
+            var l = new List<T>();
+            AccumulateLeaves(tree, l);
+            return l;
+        }
+
+        private static void AccumulateLeaves<T>(Tree<T> tree, List<T> leaves)
         {
             if (tree is Leaf<T> leaf)
             {
@@ -20,7 +27,15 @@ namespace LenientBenchmark
             }
         }
 
-        public static async Task AccumulateLeavesForkJoin<T>(Tree<T> tree, List<T> leaves)
+        public static List<T> AccumulateLeavesForkJoin<T>(Tree<T> tree)
+        {
+            var l = new List<T>();
+            var t = AccumulateLeavesForkJoin(tree, l);
+            t.Wait();
+            return l;
+        }
+
+        private static async Task AccumulateLeavesForkJoin<T>(Tree<T> tree, List<T> leaves)
         {
             if (tree is Leaf<T> leaf)
             {
@@ -48,8 +63,16 @@ namespace LenientBenchmark
                 leaves.AddRange(r);
             }
         }
+        
+        public static List<T> AccumulateLeavesLenient<T>(Tree<T> tree)
+        {
+            var l = Task.Run(() => new List<T>());
+            var t = AccumulateLeavesLenient(Task.FromResult(tree), l);
+            Task.WaitAll(l, t);
+            return l.Result;
+        }
 
-        public static async Task AccumulateLeavesLenient<T>(Task<Tree<T>> tree, Task<List<T>> leaves)
+        private static async Task AccumulateLeavesLenient<T>(Task<Tree<T>> tree, Task<List<T>> leaves)
         {
             var t = await tree;
             if (t is Leaf<T> leaf)

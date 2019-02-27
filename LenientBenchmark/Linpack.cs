@@ -16,13 +16,13 @@ namespace LenientBenchmark
             Rnd = new Random();
         }
 
-        public static long[,] Setup(int n, int m)
+        public static long[,] Setup(int n)
         {
-            var matrix = new long[n, m];
+            var matrix = new long[n, n];
             
             for (var i = 0; i < n; i++)
             {
-                for (var j = 0; j < m; j++)
+                for (var j = 0; j < n; j++)
                 {
                     matrix[i, j] = Rnd.NextLong();
                 }

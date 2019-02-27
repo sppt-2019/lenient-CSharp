@@ -18,7 +18,12 @@ namespace LenientBenchmark
             var l = CreateTree<T>(childrenLeft, valueGenerator);
             var r = CreateTree<T>(childrenRight, valueGenerator);
             
-            return new Node<T>(l, r);
+            return new Node<T>(l, r, maxChildren);
+        }
+
+        public static Tree<T> CreateBinaryTree<T>(int height, Func<T> valueGenerator)
+        {
+            return null;
         }
 
         public static Tree<int> SpawnIntTree()

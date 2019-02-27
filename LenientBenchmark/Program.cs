@@ -11,15 +11,14 @@ namespace LenientBenchmark
 {
     internal class Program
     {
-        private const int NumberOfRuns = 100;
-        private const int MaxTreeSize = 100000;
+        private static Random Rnd = new Random();
 
-        private static async Task Main(string[] args)
+        private static void Main(string[] args)
         {
             Console.WriteLine(Stopwatch.Frequency);
             
-            //await RunAccumulation();
-            //await RunSummation();
+            RunAccumulation();
+            RunSummation();
             RunLinpack();
         }
 
@@ -35,172 +34,87 @@ namespace LenientBenchmark
 
         private static void RunLinpack()
         {
+            var problems = Enumerable.Range(1, 12).Select(n => Linpack.Setup((int)Math.Pow(2, n))).ToArray();
+            var linpackSeq = new McCollinRunner<long[,], long>(Linpack.SumSeq, problems);
+            var linpackMR = new McCollinRunner<long[,], long>(Linpack.SumMapReduce, problems);
+            var linpackP = new McCollinRunner<long[,], long>(Linpack.SumParallel, problems);
+            var linpackT = new McCollinRunner<long[,], Task<long>>(Linpack.SumTask, problems);
+
+            linpackSeq.Run(100, m => m.GetLength(0));
+            linpackMR.Run(100, m => m.GetLength(0));
+            linpackP.Run(100, m => m.GetLength(0));
+            linpackT.Run(100, m => m.GetLength(0));
+
             const string fileName = "linpack.csv";
             if(File.Exists(fileName))
                 File.Delete(fileName);
             var f = new StreamWriter(fileName);
             f.WriteLine("Problem Size,Sequential,Sequential Error,Map Reduce,Map Reduce Error,Parallel Foreach,Parallel Foreach Error, Tasks, Tasks Error");
-            
-            var seq = new List<long>();
-            var mr = new List<long>();
-            var pfe = new List<long>();
-            var tasks = new List<long>();
 
-            for (var ps = 2; ps <= 4096; ps *= 2)
+            foreach (var res in linpackSeq.Results)
             {
-                Write(1, "Problem size: " + ps);
-                for (var i = 0; i <= NumberOfRuns; i++)
-                {
-                    var m = Linpack.Setup(ps, ps);
-            
-                    seq.Add(Time(Linpack.SumSeq, m));
-                    mr.Add(Time(Linpack.SumMapReduce, m));
-                    pfe.Add(Time(Linpack.SumParallel, m));
-                    tasks.Add(Time(Linpack.SumTask, m));
-                
-                    //Line 0 is reserved for dll information
-                    Write(2, $"{((float) i / NumberOfRuns) * 100}%");
-                }
-
-                double avgSeq = seq.Skip(1).Average(), avgMR = mr.Skip(1).Average(), avgPFE = pfe.Skip(1).Average(), avgT = tasks.Skip(1).Average();
-                double sdSeq = GetStandardDeviation(seq.Skip(1), avgSeq),
-                    sdMR = GetStandardDeviation(mr.Skip(1), avgMR),
-                    sdPFE = GetStandardDeviation(pfe.Skip(1), avgPFE),
-                    sdT = GetStandardDeviation(tasks.Skip(1), avgT);
-                
-                f.WriteLine($"{ps},{avgSeq},{sdSeq},{avgMR},{sdMR},{avgPFE},{sdPFE},{avgT},{sdT}");
-            
-                Console.Clear();
+                var mr = linpackMR.Results[res.Key];
+                var p = linpackP.Results[res.Key];
+                var t = linpackT.Results[res.Key];
+                f.WriteLine($"{res.Key},{res.Value.Mean},{res.Value.StandardDeviation},{mr.Mean},{mr.StandardDeviation},{p.Mean},{p.StandardDeviation},{t.Mean},{t.StandardDeviation}");
             }
             
             f.Flush();
             f.Close();
         }
 
-        private static async Task RunAccumulation()
+        private static void RunAccumulation()
         {
+            var problems = Enumerable.Range(1, 5).Select(n => TreeGenerator.CreateBinaryTree(n, () => Rnd.Next(int.MinValue, int.MaxValue))).ToArray();
+            var accumSeq = new McCollinRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeaves, problems);
+            var accumFJ = new McCollinRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeavesForkJoin, problems);
+            var accumL = new McCollinRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeavesLenient, problems);
+
+            accumSeq.Run(100, m => m.NumberOfLeaves);
+            accumFJ.Run(100, m => m.NumberOfLeaves);
+            accumL.Run(100, m => m.NumberOfLeaves);
+
             const string fileName = "accumulation.csv";
             if(File.Exists(fileName))
                 File.Delete(fileName);
             var f = new StreamWriter(fileName);
             f.WriteLine("Problem Size,Sequential,Sequential Error,Fork Join,Fork Join Error,Lenient,Lenient Error");
-            
-            var seq = new List<long>();
-            var fd = new List<long>();
-            var l = new List<long>();
-            
-            var t = new Timer();
-            var r = new Random();
 
-            for (var ps = 10; ps <= MaxTreeSize; ps *= 10)
+            foreach (var res in accumSeq.Results)
             {
-                //Line 0 is reserved for dll information
-                Write(1, "Problem size: " + ps);
-                for (var i = 0; i <= NumberOfRuns; i++)
-                {
-                    var tree = TreeGenerator.CreateTree(ps, () => r.Next(-MaxTreeSize, MaxTreeSize));
-            
-                    var acc = new List<int>();
-                    t.Play();
-                    TreeAccumulator.AccumulateLeaves(tree, acc);
-                    var tSeq = t.Check();
-                    seq.Add(tSeq);
-            
-                    var accForkJoin = new List<int>();
-                    t.Play();
-                    await TreeAccumulator.AccumulateLeavesForkJoin(tree, accForkJoin);
-                    var tFJ = t.Check();
-                    fd.Add(tFJ);
-            
-                    var accLenient = new List<int>();
-                    t.Play();
-                    await TreeAccumulator.AccumulateLeavesLenient(Task.FromResult(tree), Task.FromResult(accLenient));
-                    var tL = t.Check();
-                    l.Add(tL);
-                
-                    Write(2, $"{((float) i / NumberOfRuns) * 100}%");
-                }
-
-                double avgSeq = seq.Skip(1).Average(), avgFJ = fd.Skip(1).Average(), avgL = l.Skip(1).Average();
-                double sdSeq = GetStandardDeviation(seq.Skip(1), avgSeq),
-                    sdFJ = GetStandardDeviation(fd.Skip(1), avgFJ),
-                    sdL = GetStandardDeviation(l.Skip(1), avgL);
-                
-                f.WriteLine($"{ps},{avgSeq},{sdSeq},{avgFJ},{sdFJ},{avgL},{sdL}");
-            
-                Console.Clear();
+                var fj = accumFJ.Results[res.Key];
+                var l = accumL.Results[res.Key];
+                f.WriteLine($"{res.Key},{res.Value.Mean},{res.Value.StandardDeviation},{fj.Mean},{fj.StandardDeviation},{l.Mean},{l.StandardDeviation}");
             }
-            
+
             f.Flush();
             f.Close();
         }
 
-        private static double GetStandardDeviation(IEnumerable<long> runningTimesEnum, double mean)
+        private static void RunSummation()
         {
-            var runningTimes = runningTimesEnum.ToList();
-            var squaredDeviation = runningTimes.Sum(n => Math.Pow(n - mean, 2));
-            return Math.Sqrt(squaredDeviation / runningTimes.Count - 1);
-        }
+            var problems = Enumerable.Range(1, 5).Select(n => TreeGenerator.CreateBinaryTree(n, () => Rnd.Next(int.MinValue, int.MaxValue))).ToArray();
+            var sumSeq = new McCollinRunner<Tree<int>, int>(TreeSummer.SumLeaves, problems);
+            var sumFJ = new McCollinRunner<Tree<int>, Task<int>>(TreeSummer.SumLeavesForkJoin, problems);
+            var sumL = new McCollinRunner<Task<Tree<int>>, Task<int>>(TreeSummer.SumLeavesLenient, problems.Select(t => Task.FromResult(t)).ToArray());
 
-        private static void Write(int lineNo, string msg)
-        {
-            Console.SetCursorPosition(0,lineNo);
-            Console.WriteLine();
-            Console.SetCursorPosition(0,lineNo);
-            Console.WriteLine(msg);
-        }
+            sumSeq.Run(100, m => m.NumberOfLeaves);
+            sumFJ.Run(100, m => m.NumberOfLeaves);
+            sumL.Run(100, m => m.Result.NumberOfLeaves);
 
-        private static async Task RunSummation()
-        {
             const string fileName = "summation.csv";
             if(File.Exists(fileName))
                 File.Delete(fileName);
             var f = new StreamWriter(fileName);
             f.WriteLine("Problem Size,Sequential,Sequential Error,Fork Join,Fork Join Error,Lenient,Lenient Error");
-            
-            var seq = new List<long>();
-            var fd = new List<long>();
-            var l = new List<long>();
-            
-            var t = new Timer();
-            var r = new Random();
 
-            for (var ps = 10; ps <= MaxTreeSize; ps *= 10)
+            foreach (var res in sumSeq.Results)
             {
-                Write(1, "Problem size: " + ps);
-                
-                for (var i = 0; i < NumberOfRuns; i++)
-                {
-                    var tree = TreeGenerator.CreateTree(ps, () => r.Next(int.MinValue, int.MaxValue));
-
-                    t.Play();
-                    var sum = TreeSummer.SumLeaves(tree);
-                    var tSeq = t.Check();
-                    seq.Add(tSeq);
-
-                    t.Play();
-                    sum = await TreeSummer.SumLeavesForkJoin(tree);
-                    var tFJ = t.Check();
-                    fd.Add(tFJ);
-
-                    t.Play();
-                    sum = await TreeSummer.SumLeavesLenient(Task.FromResult(tree));
-                    var tL = t.Check();
-                    l.Add(tL);
-
-                    Write(2, $"{((float) i / NumberOfRuns) * 100}%");
-                }
-                
-                double avgSeq = seq.Average(), avgFJ = fd.Average(), avgL = l.Average();
-                double sdSeq = GetStandardDeviation(seq, avgSeq),
-                    sdFJ = GetStandardDeviation(fd, avgFJ),
-                    sdL = GetStandardDeviation(l, avgL);
-                
-                f.WriteLine($"{ps},{avgSeq},{sdSeq},{avgFJ},{sdFJ},{avgL},{sdL}");
-            
-                Console.Clear();
+                var fj = sumFJ.Results[res.Key];
+                var l = sumL.Results[res.Key];
+                f.WriteLine($"{res.Key},{res.Value.Mean},{res.Value.StandardDeviation},{fj.Mean},{fj.StandardDeviation},{l.Mean},{l.StandardDeviation}");
             }
-            
+
             f.Flush();
             f.Close();
         }
