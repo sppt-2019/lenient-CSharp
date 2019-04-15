@@ -16,20 +16,19 @@ namespace LenientBenchmark
         private static void Main(string[] args)
         {
             Console.WriteLine(Stopwatch.Frequency);
-            
-            RunAccumulation();
-            RunSummation();
-            RunLinpack();
-        }
 
-        private static long Time<U, T>(Func<T, U> code, T arg)
-        {
-            U result;
-            var t = new Stopwatch();
-            t.Start();
-            result = code(arg);
-            t.Stop();
-            return t.ElapsedTicks;
+            Console.WriteLine("Running Accumulation");
+            RunAccumulation();
+            Console.WriteLine("Running Accumulation - Random");
+            RunAccumulationRandom();
+            Console.WriteLine("Running Summation");
+            RunSummation();
+            Console.WriteLine("Running Summation - Random");
+            RunSummationRandom();
+            Console.WriteLine("Running Linpack");
+            RunLinpack();
+            Console.WriteLine("Running Linpack - Random");
+            RunLinpackRandom();
         }
 
         private static void RunLinpack()
@@ -63,6 +62,37 @@ namespace LenientBenchmark
             f.Close();
         }
 
+        private static void RunLinpackRandom()
+        {
+            var problems = Enumerable.Range(1, 12).Select(n => (int) Math.Pow(2, n)).ToArray();
+            var linpackSeq = new MorellRunner<long[,], long>(Linpack.SumSeq, problems, s => Linpack.Setup(s));
+            var linpackMR = new MorellRunner<long[,], long>(Linpack.SumMapReduce, problems, s => Linpack.Setup(s));
+            var linpackP = new MorellRunner<long[,], long>(Linpack.SumParallel, problems, s => Linpack.Setup(s));
+            var linpackT = new MorellRunner<long[,], Task<long>>(Linpack.SumTask, problems, s => Linpack.Setup(s));
+
+            linpackSeq.Run(100);
+            linpackMR.Run(100);
+            linpackP.Run(100);
+            linpackT.Run(100);
+
+            const string fileName = "linpack-rand.csv";
+            if (File.Exists(fileName))
+                File.Delete(fileName);
+            var f = new StreamWriter(fileName);
+            f.WriteLine("Problem Size,Sequential,Sequential Error,Map Reduce,Map Reduce Error,Parallel Foreach,Parallel Foreach Error, Tasks, Tasks Error");
+
+            foreach (var res in linpackSeq.Results)
+            {
+                var mr = linpackMR.Results[res.Key];
+                var p = linpackP.Results[res.Key];
+                var t = linpackT.Results[res.Key];
+                f.WriteLine($"{res.Key},{res.Value.Mean},{res.Value.StandardDeviation},{mr.Mean},{mr.StandardDeviation},{p.Mean},{p.StandardDeviation},{t.Mean},{t.StandardDeviation}");
+            }
+
+            f.Flush();
+            f.Close();
+        }
+
         private static void RunAccumulation()
         {
             var problems = Enumerable.Range(1, 5).Select(n => TreeGenerator.CreateBinaryTree(n, () => Rnd.Next(int.MinValue, int.MaxValue))).ToArray();
@@ -91,6 +121,35 @@ namespace LenientBenchmark
             f.Close();
         }
 
+        private static void RunAccumulationRandom()
+        {
+            var problems = Enumerable.Range(1, 5).Select(n => (int)Math.Pow(10, n)).ToArray();
+            Func<int, Tree<int>> treeGenerator = s => TreeGenerator.CreateTree(s, () => Rnd.Next(int.MinValue, int.MaxValue));
+            var accumSeq = new MorellRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeaves, problems, treeGenerator);
+            var accumFJ = new MorellRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeavesForkJoin, problems, treeGenerator);
+            var accumL = new MorellRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeavesLenient, problems, treeGenerator);
+
+            accumSeq.Run(100);
+            accumFJ.Run(100);
+            accumL.Run(100);
+
+            const string fileName = "accumulation-rand.csv";
+            if (File.Exists(fileName))
+                File.Delete(fileName);
+            var f = new StreamWriter(fileName);
+            f.WriteLine("Problem Size,Sequential,Sequential Error,Fork Join,Fork Join Error,Lenient,Lenient Error");
+
+            foreach (var res in accumSeq.Results)
+            {
+                var fj = accumFJ.Results[res.Key];
+                var l = accumL.Results[res.Key];
+                f.WriteLine($"{res.Key},{res.Value.Mean},{res.Value.StandardDeviation},{fj.Mean},{fj.StandardDeviation},{l.Mean},{l.StandardDeviation}");
+            }
+
+            f.Flush();
+            f.Close();
+        }
+
         private static void RunSummation()
         {
             var problems = Enumerable.Range(1, 5).Select(n => TreeGenerator.CreateBinaryTree(n, () => Rnd.Next(int.MinValue, int.MaxValue))).ToArray();
@@ -104,6 +163,36 @@ namespace LenientBenchmark
 
             const string fileName = "summation.csv";
             if(File.Exists(fileName))
+                File.Delete(fileName);
+            var f = new StreamWriter(fileName);
+            f.WriteLine("Problem Size,Sequential,Sequential Error,Fork Join,Fork Join Error,Lenient,Lenient Error");
+
+            foreach (var res in sumSeq.Results)
+            {
+                var fj = sumFJ.Results[res.Key];
+                var l = sumL.Results[res.Key];
+                f.WriteLine($"{res.Key},{res.Value.Mean},{res.Value.StandardDeviation},{fj.Mean},{fj.StandardDeviation},{l.Mean},{l.StandardDeviation}");
+            }
+
+            f.Flush();
+            f.Close();
+        }
+
+        private static void RunSummationRandom()
+        {
+            var problems = Enumerable.Range(1, 5).Select(n => (int)Math.Pow(10, n)).ToArray();
+            Func<int, Tree<int>> treeGenerator = s => TreeGenerator.CreateTree(s, () => Rnd.Next(int.MinValue, int.MaxValue));
+            var sumSeq = new MorellRunner<Tree<int>, int>(TreeSummer.SumLeaves, problems, treeGenerator);
+            var sumFJ = new MorellRunner<Tree<int>, Task<int>>(TreeSummer.SumLeavesForkJoin, problems, treeGenerator);
+            var sumL = new MorellRunner<Task<Tree<int>>, Task<int>>(TreeSummer.SumLeavesLenient, problems, 
+                s => Task.FromResult(TreeGenerator.CreateTree(s, () => Rnd.Next(int.MinValue, int.MaxValue))));
+
+            sumSeq.Run(100);
+            sumFJ.Run(100);
+            sumL.Run(100);
+
+            const string fileName = "summation.csv";
+            if (File.Exists(fileName))
                 File.Delete(fileName);
             var f = new StreamWriter(fileName);
             f.WriteLine("Problem Size,Sequential,Sequential Error,Fork Join,Fork Join Error,Lenient,Lenient Error");

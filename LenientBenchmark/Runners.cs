@@ -28,6 +28,8 @@ namespace LenientBenchmark
 
         public TestRunner(Func<T, TU> testFunc)
         {
+            Clock = new Stopwatch();
+            Results = new Dictionary<int, BenchmarkResult>();
             TestFunc = testFunc;
         }
 

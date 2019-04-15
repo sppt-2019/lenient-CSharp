@@ -21,9 +21,9 @@ namespace LenientBenchmark
             else
             {
                 var node = tree as Node<T>;
-                
-                AccumulateLeaves<T>(node.Left, leaves);
-                AccumulateLeaves<T>(node.Right, leaves);
+
+                AccumulateLeaves(node.Left, leaves);
+                AccumulateLeaves(node.Right, leaves);
             }
         }
 
@@ -48,7 +48,7 @@ namespace LenientBenchmark
                 var left = Task.Run(async () =>
                 {
                     var leftLeaves = new List<T>();
-                    await AccumulateLeavesForkJoin<T>(node.Left, leftLeaves);
+                    await AccumulateLeavesForkJoin(node.Left, leftLeaves);
                     return leftLeaves;
                 });
                 var right = Task.Run(async () =>
@@ -86,12 +86,12 @@ namespace LenientBenchmark
 
                 var left = Task.Run(async () =>
                 {
-                    await AccumulateLeavesLenient<T>(Task.FromResult(n.Left), leaves);
+                    await AccumulateLeavesLenient(Task.FromResult(n.Left), leaves);
                     return leaves.Result;
                 });
                 var right = Task.Run(async () =>
                 {
-                    await AccumulateLeavesLenient<T>(Task.FromResult(n.Right), left);
+                    await AccumulateLeavesLenient(Task.FromResult(n.Right), left);
                 });
 
                 await Task.WhenAll(left, right);
