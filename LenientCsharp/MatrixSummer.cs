@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace LenientBenchmark
 {
-    public class Linpack
+    internal abstract class MatrixSummer
     {
         private static Random Rnd { get; set; }
 
-        static Linpack()
+        static MatrixSummer()
         {
             Rnd = new Random();
         }

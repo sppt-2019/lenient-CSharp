@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace LenientBenchmark
 {
-    public static class TreeAccumulator
+    internal static class TreeAccumulator
     {
         public static List<T> AccumulateLeaves<T>(Tree<T> tree)
         {

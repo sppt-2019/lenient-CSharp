@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LenientCsharp", "LenientCsharp\LenientBenchmark.csproj", "{7C78DB1C-31C2-40BE-86A6-E0766C607E43}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fsharp", "Fsharp\Fsharp.fsproj", "{29D28020-85E0-4F26-8796-C51FBC6BF4D2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7C78DB1C-31C2-40BE-86A6-E0766C607E43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C78DB1C-31C2-40BE-86A6-E0766C607E43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C78DB1C-31C2-40BE-86A6-E0766C607E43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C78DB1C-31C2-40BE-86A6-E0766C607E43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC38E236-39DA-4F0A-9321-89B1C88DA65C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC38E236-39DA-4F0A-9321-89B1C88DA65C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC38E236-39DA-4F0A-9321-89B1C88DA65C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC38E236-39DA-4F0A-9321-89B1C88DA65C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29D28020-85E0-4F26-8796-C51FBC6BF4D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29D28020-85E0-4F26-8796-C51FBC6BF4D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29D28020-85E0-4F26-8796-C51FBC6BF4D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29D28020-85E0-4F26-8796-C51FBC6BF4D2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace LenientBenchmark
 {
-    public class TreeSummer
+    internal class TreeSummer
     {
         public static int SumLeaves(Tree<int> tree)
         {

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace LenientBenchmark
 {
-    class BenchmarkResult
+    public class BenchmarkResult
     {
         public double Mean { get; set; }
         public double StandardDeviation { get; set; }
@@ -19,7 +19,7 @@ namespace LenientBenchmark
         }
     }
 
-    abstract class TestRunner<T,TU>
+    public abstract class TestRunner<T,TU>
     {
         protected Func<T, TU> TestFunc;
         protected Stopwatch Clock;
@@ -49,7 +49,7 @@ namespace LenientBenchmark
         }
     }
 
-    class McCollinRunner<T,TU> : TestRunner<T,TU>
+    public class McCollinRunner<T,TU> : TestRunner<T,TU>
     {
         private T[] Args;
         public McCollinRunner(Func<T, TU> testFunc, T[] args) : base(testFunc)
@@ -75,13 +75,11 @@ namespace LenientBenchmark
                 var avg = result.Average();
                 var sd = GetStandardDeviation(result, avg);
                 Results[getProblemSize(p)] = new BenchmarkResult(avg, sd);
-
-                Console.Clear();
             }
         }
     }
 
-    class MorellRunner<T, TU> : TestRunner<T,TU>
+    public class MorellRunner<T, TU> : TestRunner<T,TU>
     {
         private int[] ProblemSizes;
         Func<int, T> ProblemGenerator;
@@ -98,6 +96,7 @@ namespace LenientBenchmark
 
             foreach (var p in ProblemSizes)
             {
+                Console.WriteLine("No starting problems of size: " + p);
                 for (int i = 0; i < iterations; i++)
                 {
                     var problem = ProblemGenerator(p);
@@ -112,8 +111,6 @@ namespace LenientBenchmark
                 var avg = result.Average();
                 var sd = GetStandardDeviation(result, avg);
                 Results[p] = new BenchmarkResult(avg, sd);
-
-                Console.Clear();
             }
         }
     }

@@ -33,11 +33,11 @@ namespace LenientBenchmark
 
         private static void RunLinpack()
         {
-            var problems = Enumerable.Range(1, 12).Select(n => Linpack.Setup((int)Math.Pow(2, n))).ToArray();
-            var linpackSeq = new McCollinRunner<long[,], long>(Linpack.SumSeq, problems);
-            var linpackMR = new McCollinRunner<long[,], long>(Linpack.SumMapReduce, problems);
-            var linpackP = new McCollinRunner<long[,], long>(Linpack.SumParallel, problems);
-            var linpackT = new McCollinRunner<long[,], Task<long>>(Linpack.SumTask, problems);
+            var problems = Enumerable.Range(1, 12).Select(n => MatrixSummer.Setup((int)Math.Pow(2, n))).ToArray();
+            var linpackSeq = new McCollinRunner<long[,], long>(MatrixSummer.SumSeq, problems);
+            var linpackMR = new McCollinRunner<long[,], long>(MatrixSummer.SumMapReduce, problems);
+            var linpackP = new McCollinRunner<long[,], long>(MatrixSummer.SumParallel, problems);
+            var linpackT = new McCollinRunner<long[,], Task<long>>(MatrixSummer.SumTask, problems);
 
             linpackSeq.Run(100, m => m.GetLength(0));
             linpackMR.Run(100, m => m.GetLength(0));
@@ -65,10 +65,10 @@ namespace LenientBenchmark
         private static void RunLinpackRandom()
         {
             var problems = Enumerable.Range(1, 12).Select(n => (int) Math.Pow(2, n)).ToArray();
-            var linpackSeq = new MorellRunner<long[,], long>(Linpack.SumSeq, problems, s => Linpack.Setup(s));
-            var linpackMR = new MorellRunner<long[,], long>(Linpack.SumMapReduce, problems, s => Linpack.Setup(s));
-            var linpackP = new MorellRunner<long[,], long>(Linpack.SumParallel, problems, s => Linpack.Setup(s));
-            var linpackT = new MorellRunner<long[,], Task<long>>(Linpack.SumTask, problems, s => Linpack.Setup(s));
+            var linpackSeq = new MorellRunner<long[,], long>(MatrixSummer.SumSeq, problems, s => MatrixSummer.Setup(s));
+            var linpackMR = new MorellRunner<long[,], long>(MatrixSummer.SumMapReduce, problems, s => MatrixSummer.Setup(s));
+            var linpackP = new MorellRunner<long[,], long>(MatrixSummer.SumParallel, problems, s => MatrixSummer.Setup(s));
+            var linpackT = new MorellRunner<long[,], Task<long>>(MatrixSummer.SumTask, problems, s => MatrixSummer.Setup(s));
 
             linpackSeq.Run(100);
             linpackMR.Run(100);

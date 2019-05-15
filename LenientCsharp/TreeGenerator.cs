@@ -2,7 +2,7 @@ using System;
 
 namespace LenientBenchmark
 {
-    public class TreeGenerator
+    internal class TreeGenerator
     {
         private static readonly Random rnd = new Random();
 

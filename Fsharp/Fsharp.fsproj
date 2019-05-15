@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Include="TreeGenerator.fs" />
+      <Compile Include="Problems\TreeAccumulator.fs" />
+      <Compile Include="Problems\MatrixSummer.fs" />
+      <Compile Include="Problems\TreeSummer.fs" />
+      <Compile Include="Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\LenientCsharp\LenientBenchmark.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="results" />
+    </ItemGroup>
+
+</Project>
