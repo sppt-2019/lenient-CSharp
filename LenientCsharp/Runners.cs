@@ -81,26 +81,25 @@ namespace LenientBenchmark
 
     public class MorellRunner<T, TU> : TestRunner<T,TU>
     {
-        private int[] ProblemSizes;
-        Func<int, T> ProblemGenerator;
+        private T[] Problems;
+        public int[] ProblemSizes { get; }
 
-        public MorellRunner(Func<T, TU> testFunc, int[] problemSizes, Func<int, T> problemGenerator) : base(testFunc)
+
+        public MorellRunner(Func<T, TU> testFunc, T[] problems, int[] problemSizes) : base(testFunc)
         {
+            Problems = problems;
             ProblemSizes = problemSizes;
-            ProblemGenerator = problemGenerator;
         }
 
         public void Run(int iterations)
         {
             var result = new List<long>();
 
-            foreach (var p in ProblemSizes)
+            for (var j = 0; j < Problems.Length; j++)
             {
-                Console.WriteLine("No starting problems of size: " + p);
-                for (int i = 0; i < iterations; i++)
+                for (var i = 0; i < iterations; i++)
                 {
-                    var problem = ProblemGenerator(p);
-
+                    var problem = Problems[j];
                     Clock.Restart();
                     var res = TestFunc(problem);
                     Clock.Stop();
@@ -110,7 +109,7 @@ namespace LenientBenchmark
 
                 var avg = result.Average();
                 var sd = GetStandardDeviation(result, avg);
-                Results[p] = new BenchmarkResult(avg, sd);
+                Results[ProblemSizes[j]] = new BenchmarkResult(avg, sd);
             }
         }
     }

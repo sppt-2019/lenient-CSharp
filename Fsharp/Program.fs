@@ -81,15 +81,18 @@ let runMatrixSum () =
     
 let runMatrixSumRandom () =
     let ms = MatrixSummer()
-    let problems = [|1..12|] |> Array.map (fun n -> int (2.0f ** (float32 n)))
+    let problemSizes = [|1..12|] |> Array.map (fun n -> int (2.0f ** (float32 n)))
+    let problems =
+        problemSizes
+        |> Array.map ms.Setup
     let msRandSeq = new MorellRunner<int64 list list, int64> (new Func<int64 list list, int64> (ms.SumSequential),
-                                                              problems, new Func<int, int64 list list>(ms.Setup))
+                                                              problems, problemSizes)
     let msRandMR = new MorellRunner<int64 list list, int64> (new Func<int64 list list, int64> (ms.SumMapReduce),
-                                                              problems, new Func<int, int64 list list>(ms.Setup))
+                                                              problems, problemSizes)
     let msRandP = new MorellRunner<int64 list list, int64> (new Func<int64 list list, int64> (ms.SumParallel),
-                                                              problems, new Func<int, int64 list list>(ms.Setup))
+                                                              problems, problemSizes)
     let msRandT = new MorellRunner<int64 list list, int64> (new Func<int64 list list, int64> (ms.SumTasks),
-                                                              problems, new Func<int, int64 list list>(ms.Setup))
+                                                              problems, problemSizes)
     
     msRandSeq.Run 100
     msRandMR.Run 100
@@ -121,17 +124,17 @@ let runAccumulation () =
 
 let runAccumulationRandom () =
     let rnd = System.Random()
-    let problems = [|1..5|] |> Array.map (fun n -> int (10.0f ** float32 n))
+    let problemSizes = [|1..5|] |> Array.map (fun n -> int (10.0f ** float32 n))
     let tg = TreeGenerator()
     let treeGen = (fun s -> tg.CreateTree s (fun () -> rnd.NextLong()))
-    let accumSeq = new MorellRunner<tree, int64 list>(new Func<tree, int64 list>(leaves), problems,
-                                                    new Func<int, tree>(treeGen))
-    let accumAW = new MorellRunner<tree, int64 list>(new Func<tree, int64 list>(leaves), problems,
-                                                    new Func<int, tree>(treeGen))
-    let accumTPL = new MorellRunner<tree, int64 list>(new Func<tree, int64 list>(leaves), problems,
-                                                    new Func<int, tree>(treeGen))
-    let accumL = new MorellRunner<tree, int64 list>(new Func<tree, int64 list>(lenientLeaves), problems,
-                                                    new Func<int, tree>(treeGen))
+    let problems =
+        problemSizes
+        |> Array.map treeGen
+    
+    let accumSeq = new MorellRunner<tree, int64 list>(new Func<tree, int64 list>(leaves), problems, problemSizes)
+    let accumAW = new MorellRunner<tree, int64 list>(new Func<tree, int64 list>(leaves), problems, problemSizes)
+    let accumTPL = new MorellRunner<tree, int64 list>(new Func<tree, int64 list>(leaves), problems, problemSizes)
+    let accumL = new MorellRunner<tree, int64 list>(new Func<tree, int64 list>(lenientLeaves), problems, problemSizes)
     
     accumSeq.Run 100
     accumAW.Run 100
@@ -163,17 +166,17 @@ let runSummation () =
 
 let runSummationRandom () =
     let rnd = System.Random()
-    let problems = [|1..5|] |> Array.map (fun n -> int (3.0f ** float32 n))
+    let problemSizes = [|1..5|] |> Array.map (fun n -> int (3.0f ** float32 n))
     let tg = TreeGenerator()
     let treeGen = (fun s -> tg.CreateTree s (fun () -> rnd.NextLong()))
-    let accumSeq = new MorellRunner<tree, int64>(new Func<tree, int64>(TreeSummer.sumLeaves), problems,
-                                                    new Func<int, tree>(treeGen))
-    let accumAW = new MorellRunner<tree, int64>(new Func<tree, int64>(TreeSummer.parallelLeaves), problems,
-                                                    new Func<int, tree>(treeGen))
-    let accumTPL = new MorellRunner<tree, int64>(new Func<tree, int64>(TreeSummer.tplParallelLeaves), problems,
-                                                    new Func<int, tree>(treeGen))
-    let accumL = new MorellRunner<tree, int64>(new Func<tree, int64>(TreeSummer.lenientSum), problems,
-                                                    new Func<int, tree>(treeGen))
+    let problems =
+        problemSizes
+        |> Array.map treeGen
+    
+    let accumSeq = new MorellRunner<tree, int64>(new Func<tree, int64>(TreeSummer.sumLeaves), problems, problemSizes)
+    let accumAW = new MorellRunner<tree, int64>(new Func<tree, int64>(TreeSummer.parallelLeaves), problems, problemSizes)
+    let accumTPL = new MorellRunner<tree, int64>(new Func<tree, int64>(TreeSummer.tplParallelLeaves), problems, problemSizes)
+    let accumL = new MorellRunner<tree, int64>(new Func<tree, int64>(TreeSummer.lenientSum), problems, problemSizes)
     
     accumSeq.Run 100
     accumAW.Run 1
@@ -186,18 +189,18 @@ let runSummationRandom () =
 let main argv =
     printfn "Welcome to spPT103f19 concurrency benchmarks in F#!"
     
-    printfn "Running Accumulation"
-    runAccumulation ()
-    printfn "Running Accumulation - Random"
-    runAccumulationRandom ()
-//    printfn "Running Summation"
-//    runSummation ()
-//    printfn "Running Summation - Random"
-//    runSummationRandom ()
-    printfn "Running Matrix Sum"
-    runMatrixSum ()
-    printfn "Running Matrix Sum - Random"
-    runMatrixSumRandom ()
+//    printfn "Running Accumulation"
+//    runAccumulation ()
+//    printfn "Running Accumulation - Random"
+//    runAccumulationRandom ()
+    printfn "Running Summation"
+    runSummation ()
+    printfn "Running Summation - Random"
+    runSummationRandom ()
+//    printfn "Running Matrix Sum"
+//    runMatrixSum ()
+//    printfn "Running Matrix Sum - Random"
+//    runMatrixSumRandom ()
 
 
     printfn "Benchmarking has completed. Press ENTER to exit."

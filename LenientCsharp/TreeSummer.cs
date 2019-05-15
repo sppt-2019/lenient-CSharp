@@ -14,7 +14,7 @@ namespace LenientBenchmark
             }
             
             var node = tree as Node<int>;
-            return SumLeaves(node.Left) + SumLeaves(node.Right);
+            return unchecked(SumLeaves(node.Left) + SumLeaves(node.Right));
         }
 
         public static async Task<int> SumLeavesForkJoin(Tree<int> tree)
@@ -30,7 +30,7 @@ namespace LenientBenchmark
             var right = SumLeavesForkJoin(node.Right);
             await Task.WhenAll(left, right);
             
-            return left.Result + right.Result;
+            return unchecked(left.Result + right.Result);
         }
 
         public static async Task<int> SumLeavesLenient(Task<Tree<int>> tree)
@@ -47,7 +47,7 @@ namespace LenientBenchmark
             var right = SumLeavesLenient(Task.FromResult(n.Right));
             await Task.WhenAll(left, right);
             
-            return left.Result + right.Result;
+            return unchecked(left.Result + right.Result);
         }
     }
 }

@@ -17,7 +17,7 @@ namespace LenientBenchmark
         {
             Console.WriteLine(Stopwatch.Frequency);
 
-            Console.WriteLine("Running Accumulation");
+            /*Console.WriteLine("Running Accumulation");
             RunAccumulation();
             Console.WriteLine("Running Accumulation - Random");
             RunAccumulationRandom();
@@ -26,7 +26,7 @@ namespace LenientBenchmark
             Console.WriteLine("Running Summation - Random");
             RunSummationRandom();
             Console.WriteLine("Running Linpack");
-            RunLinpack();
+            RunLinpack();*/
             Console.WriteLine("Running Linpack - Random");
             RunLinpackRandom();
         }
@@ -64,11 +64,12 @@ namespace LenientBenchmark
 
         private static void RunLinpackRandom()
         {
-            var problems = Enumerable.Range(1, 12).Select(n => (int) Math.Pow(2, n)).ToArray();
-            var linpackSeq = new MorellRunner<long[,], long>(MatrixSummer.SumSeq, problems, s => MatrixSummer.Setup(s));
-            var linpackMR = new MorellRunner<long[,], long>(MatrixSummer.SumMapReduce, problems, s => MatrixSummer.Setup(s));
-            var linpackP = new MorellRunner<long[,], long>(MatrixSummer.SumParallel, problems, s => MatrixSummer.Setup(s));
-            var linpackT = new MorellRunner<long[,], Task<long>>(MatrixSummer.SumTask, problems, s => MatrixSummer.Setup(s));
+            var problems = Enumerable.Range(1, 12).Select(n => (int) Math.Pow(2, n)).Select(s => MatrixSummer.Setup(s)).ToArray();
+            var problemSizes = Enumerable.Range(1, 12).Select(n => (int) Math.Pow(2, n)).ToArray();
+            var linpackSeq = new MorellRunner<long[,], long>(MatrixSummer.SumSeq, problems, problemSizes);
+            var linpackMR = new MorellRunner<long[,], long>(MatrixSummer.SumMapReduce, problems, problemSizes);
+            var linpackP = new MorellRunner<long[,], long>(MatrixSummer.SumParallel, problems, problemSizes);
+            var linpackT = new MorellRunner<long[,], Task<long>>(MatrixSummer.SumTask, problems, problemSizes);
 
             linpackSeq.Run(100);
             linpackMR.Run(100);
@@ -123,11 +124,14 @@ namespace LenientBenchmark
 
         private static void RunAccumulationRandom()
         {
-            var problems = Enumerable.Range(1, 5).Select(n => (int)Math.Pow(10, n)).ToArray();
-            Func<int, Tree<int>> treeGenerator = s => TreeGenerator.CreateTree(s, () => Rnd.Next(int.MinValue, int.MaxValue));
-            var accumSeq = new MorellRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeaves, problems, treeGenerator);
-            var accumFJ = new MorellRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeavesForkJoin, problems, treeGenerator);
-            var accumL = new MorellRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeavesLenient, problems, treeGenerator);
+            var problems = Enumerable.Range(1, 5)
+                .Select(n => (int)Math.Pow(10, n))
+                .Select(s => TreeGenerator.CreateTree(s, () => Rnd.Next(int.MinValue, int.MaxValue)))
+                .ToArray();
+            var problemSizes = Enumerable.Range(1, 5).Select(n => (int) Math.Pow(10, n)).ToArray();
+            var accumSeq = new MorellRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeaves, problems, problemSizes);
+            var accumFJ = new MorellRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeavesForkJoin, problems, problemSizes);
+            var accumL = new MorellRunner<Tree<int>, List<int>>(TreeAccumulator.AccumulateLeavesLenient, problems, problemSizes);
 
             accumSeq.Run(100);
             accumFJ.Run(100);
@@ -180,12 +184,15 @@ namespace LenientBenchmark
 
         private static void RunSummationRandom()
         {
-            var problems = Enumerable.Range(1, 5).Select(n => (int)Math.Pow(10, n)).ToArray();
-            Func<int, Tree<int>> treeGenerator = s => TreeGenerator.CreateTree(s, () => Rnd.Next(int.MinValue, int.MaxValue));
-            var sumSeq = new MorellRunner<Tree<int>, int>(TreeSummer.SumLeaves, problems, treeGenerator);
-            var sumFJ = new MorellRunner<Tree<int>, Task<int>>(TreeSummer.SumLeavesForkJoin, problems, treeGenerator);
-            var sumL = new MorellRunner<Task<Tree<int>>, Task<int>>(TreeSummer.SumLeavesLenient, problems, 
-                s => Task.FromResult(TreeGenerator.CreateTree(s, () => Rnd.Next(int.MinValue, int.MaxValue))));
+            var problems = Enumerable.Range(1, 5)
+                .Select(n => (int)Math.Pow(10, n))
+                .Select(s => TreeGenerator.CreateTree(s, () => Rnd.Next(int.MinValue, int.MaxValue)))
+                .ToArray();
+            var problemSizes = Enumerable.Range(1, 5).Select(n => (int) Math.Pow(10, n)).ToArray();
+            var sumSeq = new MorellRunner<Tree<int>, int>(TreeSummer.SumLeaves, problems, problemSizes);
+            var sumFJ = new MorellRunner<Tree<int>, Task<int>>(TreeSummer.SumLeavesForkJoin, problems, problemSizes);
+            var sumL = new MorellRunner<Task<Tree<int>>, Task<int>>(TreeSummer.SumLeavesLenient, 
+                problems.Select(t => Task.FromResult(t)).ToArray(), problemSizes);
 
             sumSeq.Run(100);
             sumFJ.Run(100);
