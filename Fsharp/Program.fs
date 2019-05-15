@@ -8,10 +8,12 @@ open System.Collections.Generic
 open System.IO
 open TreeGenerator
 
+let benchmarkTreeSize = 16
+
 type OS =
         | OSX            
         | Windows
-        | Linux
+        | Linux 
 
 let getOS = 
         match int Environment.OSVersion.Platform with
@@ -29,7 +31,7 @@ let outputLinpackResults fileName (seqResults:Dictionary<int, BenchmarkResult>) 
     (pResults:Dictionary<int,BenchmarkResult>) (tResults:Dictionary<int,BenchmarkResult>) =
     let fn = Path.Combine ("results", fileName)
     let f = OpenFile fn
-    f.WriteLine "Problem Size,Sequential,Sequential Error,Map Reduce,Map Reduce Error,Parallel Foreach,Parallel Foreach Error, Tasks, Tasks Error"
+    f.WriteLine "Problem Size,Sequential,Sequential Error,Map Reduce,Map Reduce Error,Parallel Foreach,Parallel Foreach Error,Tasks,Tasks Error"
 
     for res in seqResults do
         let mr = mrResults.[res.Key]
@@ -47,10 +49,14 @@ let outputTreeResults fileName (seqResults:Dictionary<int, BenchmarkResult>) (aw
     (tplResults:Dictionary<int,BenchmarkResult>) (lResults:Dictionary<int,BenchmarkResult>) =
     let fn = Path.Combine("results", fileName)
     let f = OpenFile fn
-    f.WriteLine "Problem Size,Sequential,Sequential Error,Async Workflow,Async Workflow Error,TPL,TPL Error;Lenient;Lenient Error"
+    f.WriteLine "Problem Size,Sequential,Sequential Error,Async Workflow,Async Workflow Error,TPL,TPL Error,Lenient,Lenient Error"
 
     for res in seqResults do
-        let fj = awResults.[res.Key]
+        let fj =
+            if awResults.ContainsKey res.Key then
+                awResults.[res.Key]
+            else
+                BenchmarkResult(0.0, 0.0)
         let tpl = tplResults.[res.Key]
         let l = lResults.[res.Key]
         let output = (sprintf "%i,%f,%f,%f,%f,%f,%f,%f,%f"
@@ -104,9 +110,13 @@ let runMatrixSumRandom () =
 let runAccumulation () =
     let rnd = System.Random()
     let tg = TreeGenerator()
-    let problems = [|1..5|] |> Array.map (fun n -> tg.CreateBinaryTree n (fun () -> rnd.NextLong()))
+    let problems = [|1..benchmarkTreeSize|] |> Array.map (fun n -> tg.CreateBinaryTree n (fun () -> rnd.NextLong()))
+    let asyncWorkFlowProblems =
+        [|1..7|]
+        |> Array.map (fun n -> problems.[n])
+    
     let accumSeq = new McCollinRunner<tree, int64 list>(new Func<tree, int64 list>(leaves), problems)
-    let accumAW = new McCollinRunner<tree, int64 list>(new Func<tree, int64 list>(parallelLeaves), problems)
+    let accumAW = new McCollinRunner<tree, int64 list>(new Func<tree, int64 list>(parallelLeaves), asyncWorkFlowProblems)
     let accumTPL = new McCollinRunner<tree, int64 list>(new Func<tree, int64 list>(tplParallelLeaves), problems)
     let accumL = new McCollinRunner<tree, int64 list>(new Func<tree, int64 list>(lenientLeaves), problems)
     
@@ -124,7 +134,9 @@ let runAccumulation () =
 
 let runAccumulationRandom () =
     let rnd = System.Random()
-    let problemSizes = [|1..5|] |> Array.map (fun n -> int (10.0f ** float32 n))
+    let problemSizes =
+        [|1..benchmarkTreeSize|]
+        |> Array.map (fun n -> int (2.0f ** float32 n))
     let tg = TreeGenerator()
     let treeGen = (fun s -> tg.CreateTree s (fun () -> rnd.NextLong()))
     let problems =
@@ -146,9 +158,16 @@ let runAccumulationRandom () =
 let runSummation () =
     let rnd = System.Random()
     let tg = TreeGenerator()
-    let problems = [|1..5|] |> Array.map (fun n -> tg.CreateBinaryTree n (fun () -> rnd.NextLong()))
+    let problems =
+        [|1..benchmarkTreeSize|]
+        |> Array.map (fun n -> tg.CreateBinaryTree n (fun () -> rnd.NextLong()))
+    
+    let asyncWorkFlowProblems =
+        [|1..7|]
+        |> Array.map (fun n -> problems.[n])
+        
     let accumSeq = new McCollinRunner<tree, int64>(new Func<tree, int64>(TreeSummer.sumLeaves), problems)
-    let accumAW = new McCollinRunner<tree, int64>(new Func<tree, int64>(TreeSummer.parallelLeaves), problems)
+    let accumAW = new McCollinRunner<tree, int64>(new Func<tree, int64>(TreeSummer.parallelLeaves), asyncWorkFlowProblems)
     let accumTPL = new McCollinRunner<tree, int64>(new Func<tree, int64>(TreeSummer.tplParallelLeaves), problems)
     let accumL = new McCollinRunner<tree, int64>(new Func<tree, int64>(TreeSummer.lenientSum), problems)
     
@@ -166,7 +185,9 @@ let runSummation () =
 
 let runSummationRandom () =
     let rnd = System.Random()
-    let problemSizes = [|1..5|] |> Array.map (fun n -> int (3.0f ** float32 n))
+    let problemSizes =
+        [|1..benchmarkTreeSize|]
+        |> Array.map (fun n -> int (2.0f ** float32 n))
     let tg = TreeGenerator()
     let treeGen = (fun s -> tg.CreateTree s (fun () -> rnd.NextLong()))
     let problems =
@@ -189,10 +210,10 @@ let runSummationRandom () =
 let main argv =
     printfn "Welcome to spPT103f19 concurrency benchmarks in F#!"
     
-//    printfn "Running Accumulation"
-//    runAccumulation ()
-//    printfn "Running Accumulation - Random"
-//    runAccumulationRandom ()
+    printfn "Running Accumulation"
+    runAccumulation ()
+    printfn "Running Accumulation - Random"
+    runAccumulationRandom ()
     printfn "Running Summation"
     runSummation ()
     printfn "Running Summation - Random"

@@ -19,11 +19,10 @@ let parallelLeaves t =
         match t with
         | Leaf i -> return i
         | Node (left, right, _) ->
-            let ress =
+            let! ress =
                 [left ; right]
                 |> List.map asyncAccum
                 |> Async.Parallel
-                |> Async.RunSynchronously
             return ress.[0] +! ress.[1]
     }
     Async.RunSynchronously (asyncAccum t)
@@ -33,8 +32,8 @@ let tplParallelLeaves t =
         match n with
         | Leaf i -> i
         | Node (left, right, _) ->
-            let l = Task.Factory.StartNew (fun () ->  leavesAccum left)
-            let r = Task.Factory.StartNew (fun () ->  leavesAccum right)
+            let l = Task.Run (fun () ->  leavesAccum left)
+            let r = Task.Run (fun () ->  leavesAccum right)
             Task.WaitAll(l, r)
             l.Result + r.Result
                                 

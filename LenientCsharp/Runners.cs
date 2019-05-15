@@ -63,6 +63,7 @@ namespace LenientBenchmark
 
             foreach (var p in Args)
             {
+                Console.WriteLine("Problem size: " + getProblemSize(p));
                 for (int i = 0; i < iterations; i++)
                 {
                     Clock.Restart();
@@ -97,6 +98,7 @@ namespace LenientBenchmark
 
             for (var j = 0; j < Problems.Length; j++)
             {
+                Console.WriteLine("Problem size: " + j);
                 for (var i = 0; i < iterations; i++)
                 {
                     var problem = Problems[j];
